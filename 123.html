@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title></title>
+<style>
+body { margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px;}
+.menu{
+margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px;
+!--border:none;
+text-align: center;
+width:100px;
+height:60px;
+background:#81E1F7;
+cursor:pointer ;
+}
+.menu1{
+margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px;
+border:none;
+text-align: center;
+width:100px;
+height:30px;
+background:#ffffff;
+cursor:pointer ;
+}
+.menu2{
+margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px;
+border:none;
+text-align: right;
+width:100px;
+height:60px;
+background:#81E1F7;
+cursor:pointer ;
+}
+#menuBody{
+border-collapse: collapse;
+border:2px solid #00FFFF;
+background:#00FFFF;
+}
+
+</style>
+</head>
+<body>
+<div align="center" >
+<div id="menuBody">
+
+<input type="button" id="open" class="menu" value="open" onclick="openClick()"></input>
+<input type="button" id= "save" class="menu" value = "save" onclick="saveClick()"></input>
+
+<input type="button" class="menu" id="clear" value="clear" onclick = "chearClick()"></input>
+<input type="button" class="menu" id="eraser" value="eraser" onclick="doEraser()"></input>
+<select id = "shape" class="menu" onchange="shapeChange()">
+<option value = "99">shape</option>
+<option value = "1">rectangle</option>
+<option value = "0">circle</option>
+<option value = "2">line</option>
+</select>
+<input type="button" class="menu2" value="color:"></input>
+<input id="color" type="color"/>
+<input type="button" class="menu2" value="size:"></input>
+<input type="text" class="menu1" id="size" onchange="sizeChange()"></input>
+</div>
+<canvas id="myCanvas" style=" border:1px solid;" width="1920" height="810"></canvas>
+</div>
+</body>
+<script language="JavaScript">
+var flag=0;
+var shap = 99; //0 is circle; 1 is rectangle;2 is line
+var orignalX, orignalY;//the coordinate of mouse down
+var lastX, lastY;//the coordinate of last mouse position
+var isMouseDown = false; // flag of mouse pressing down
+var myCanvas = document.getElementById("myCanvas");
+var context = myCanvas.getContext('2d');
+var width = myCanvas.width, height = myCanvas.height;
+var data;//storing last canvas' content
+context.strokeStyle = "black";
+context.strokeWidth=1;
+context.lineWidth = 20;
+var objectData = new Array();
+var wholeImage = new Array();
+var curveArray=Array(); //保存曲线对象
+var finalCurveArray=Array(); //点击保存后保存曲线对象的数组
+var curveObjectCount=0;
+var curveObjectCounter=0;
+
+
+
+//改变鼠标图形
+var soBoringing=document.getElementById("myCanvas");
+soBoringing.onmouseover = function() {
+soBoringing.style.cursor = 'crosshair';
+}
+
+
+
+//点击清除时执行
+function chearClick(){
+context.clearRect(0,0,width,height);
+data=context.getImageData(0, 0, width, height);
+console.log(wholeImage);
+}
+
+
+//打开保存图像
+function openClick(){
+for(var i=0;i<objectData.length;i++){
+objectData[i].drew();
+}
+for(i=0;i<finalCurveArray.length;i++)
+for(j=0;j<finalCurveArray[i].length;j++)
+finalCurveArray[i][j].drew();
+
+}
+
+
+//保存图像
+function saveClick(){
+for(var i=0;i<wholeImage.length;i++){
+objectData[i] = wholeImage[i];
+}
+for(i=0;i<curveArray.length;i++)
+finalCurveArray[i]= new Array();
+for(j=0;j<curveArray[i].length;j++)
+finalCurveArray[i][j] = curveArray[i][j];
+
+}
+
+
+
+//所有类型构造函数
+function shapeFather(theShape,theSize,theColor,theOrignalX,theOrignalY,theLastX, theLastY,newContext){
+this.theShape=theShape;
+this.theOrignalX=theOrignalX;
+this.theOrignalY=theOrignalY;
+this.theLastX=theLastX;
+this.theLastY=theLastY;
+this.color = theColor;
+this.size = theSize;
+
+this.context2 = newContext;
+this.context2.strokeStyle = this.color;
+this.context2.lineWidth = this.size;
+}
+
+
+
+shapeFather.prototype.drew=function(){
+var context1 = this.context2;
+context1.strokeStyle = this.color;
+context1.lineWidth = this.size;
+var orignalX = this.theOrignalX;
+var orignalY = this.theOrignalY;
+var lastX = this.theLastX;
+var lastY = this.theLastY;
+var Shape = this.theShape;
+switch(Shape){
+case 0:
+context1.beginPath();
+context1.arc(orignalX+(lastX-orignalX)/2,orignalY+(lastY-orignalY)/2,Math.abs(lastX-orignalX)/2,0,Math.PI * 2,true);
+context1.stroke();
+context1.closePath();
+break;
+case 1:
+context1.beginPath();
+context1.strokeRect(orignalX, orignalY, lastX-orignalX, lastY-orignalY);
+context1.closePath();
+break;
+case 2:
+//
+context1.beginPath();
+context1.moveTo(this.orignalX,this.orignalY);
+context1.lineTo(this.lastX,this.lastY);
+context1.stroke();
+context1.closePath();
+   //alert("1111");
+break;
+}
+
+}
+
+document.getElementById('color').onchange = function(){
+     context.strokeStyle = this.value
+};
+
+
+
+
+//点击橡皮时执行
+function doEraser(){
+myCanvas.removeEventListener("mousemove", myCanvasMouseMove, false);
+myCanvas.removeEventListener("mousedown", myCanvasMouseDown,false);
+myCanvas.removeEventListener("mouseup", myCanvasMouseUp, false);
+myCanvas.addEventListener("click", myCanvasMouseClick);
+
+}
+
+
+
+// 改变画笔粗细
+function sizeChange(){
+
+context.lineWidth = parseInt(document.getElementById('size').value);
+
+}
+
+
+
+
+
+// 改变所画类型
+function shapeChange(){
+myCanvas.addEventListener("mousedown", myCanvasMouseDown, false);
+myCanvas.addEventListener("mousemove", myCanvasMouseMove, false);
+myCanvas.addEventListener("mouseup", myCanvasMouseUp, false);
+myCanvas.removeEventListener("click", myCanvasMouseClick);
+context.strokeStyle = "black";
+var myselect = document.getElementById("shape");
+var index=myselect.selectedIndex ;  
+var myvalue  = myselect.options[index].value;
+var mytext=myselect.options[index].text; 
+shap = parseInt(myvalue);
+}
+
+
+
+
+function myCanvasMouseDown(event) {
+//event.preventDefault();
+
+if(event.button == 0) {
+
+orignalX = event.offsetX;
+orignalY = event.offsetY;
+data = context.getImageData(0, 0, width, height);
+isMouseDown = true;
+
+}
+if(shap==2)
+{
+curveArray[curveObjectCount]= new Array();
+
+}
+}
+
+
+function myCanvasMouseMove(event) {
+if (isMouseDown){
+
+switch(shap){
+case 0:
+context.clearRect(0,0,width,height);
+context.putImageData(data,0,0);
+lastX = event.offsetX;
+lastY = event.offsetY;
+context.beginPath();
+context.arc(orignalX+(lastX-orignalX)/2,orignalY+(lastY-orignalY)/2,Math.abs(lastX-orignalX)/2,0,Math.PI * 2,true);
+context.stroke();
+context.closePath();
+break;
+case 1:
+context.clearRect(0,0,width,height);
+context.putImageData(data,0,0);
+lastX = event.offsetX;
+lastY = event.offsetY;
+context.strokeRect(orignalX, orignalY, lastX-orignalX, lastY-orignalY);
+break;
+case 2:
+context.clearRect(0,0,width,height);
+context.putImageData(data,0,0);
+lastX = event.offsetX;
+lastY = event.offsetY;
+context.moveTo(orignalX,orignalY);
+context.lineTo(lastX,lastY);
+var graph =new shapeFather(shap,context.lineWidth,context.strokeStyle,orignalX ,orignalY,lastX,lastY,context);
+curveArray[curveObjectCount][curveObjectCounter]=graph;
+orignalX=lastX;
+orignalY=lastY;
+context.stroke()
+curveObjectCounter++;
+break;
+case 3:
+break;
+
+}
+}
+}
+
+
+
+function myCanvasMouseUp(event) {
+
+if (isMouseDown){
+
+context.clearRect(0,0,width,height);
+context.putImageData(data,0,0);
+lastX = event.offsetX;
+lastY = event.offsetY;
+isMouseDown = false;
+lineW=context.lineWidth;
+strokeS=context.strokeStyle;
+if(shap==2)
+{ //alert(curveArray.length);
+
+for(i=0;i<curveArray.length;i++)
+for(j=0;j<curveArray[i].length;j++);
+//curveArray[i][j].theShape=2;
+//alert(curveArray[0][0].theShape);
+//curveArray[i][j].drew();
+curveObjectCount++;
+curveObjectCounter=0;
+
+   context.lineTo(lastX, lastY); //根据鼠标路径绘画  
+    context.stroke();   //立即渲染 
+
+
+
+
+}
+else
+{
+var pic = new shapeFather(shap,lineW,strokeS,orignalX ,orignalY,lastX,lastY,context);
+pic.drew();
+wholeImage.push(pic);
+}
+
+isMouseDown = false;
+lastX = null;
+lastY = null;
+
+}
+}
+
+//鼠标点击事件
+function myCanvasMouseClick(event){
+context.clearRect(0,0,1920,810);
+context.beginPath();
+for(i=0;i<wholeImage.length;i++)
+{
+
+if(wholeImage[i].theShape==0)
+{
+wholeImage[i].drew();
+if(context.isPointInStroke(event.offsetX,event.offsetY))
+{
+wholeImage.splice(i,1);
+break;
+}
+}
+if(wholeImage[i].theShape==1)
+{
+wholeImage[i].drew();
+if(context.isPointInStroke(event.offsetX,event.offsetY))
+{
+wholeImage.splice(i,1);
+break;
+}
+}
+}
+context.closePath();
+context.clearRect(0,0,1920,810);
+for(i=0;i<wholeImage.length;i++)
+wholeImage[i].drew();
+}
+
+</script>
+
+</html>
